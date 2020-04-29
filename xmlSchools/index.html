@@ -1,0 +1,119 @@
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <style type="text/css">
+    h1 {
+      font-family: Verdana;
+      font-size: 24pt;
+      margin-left: 25px;
+    }
+
+    input,
+    select,
+    button {
+      font-family: Verdana;
+      font-size: 14pt;
+      margin: 10px;
+    }
+    #subContainer {
+      margin-left: 45px;
+    }
+    img {
+      height: 100px;
+    }
+    #xsltOutputContainer {
+      margin: 45px;
+    }
+  </style>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no" />
+  <title>Schools in London Ontario</title>
+
+</head>
+
+<body onload="getTypes()">
+
+  <h1><img src="worm.JPG" />Schools in London, Ontario</h1>
+  <div id="subContainer">
+    <select id="typeInput"></select>
+    <input type="text" id="nameInput" label="Name: " />
+    <input type="submit" value="Submit" onclick="RenderXSLT()" />
+  </div>
+
+  <div id="xsltOutputContainer"></div>
+
+  <script type="text/javascript">
+
+    function loadXMLDoc(filename) {
+      if (window.ActiveXObject) {
+        xhttp = new ActiveXObject("Msxml2.XMLHTTP");
+      }
+      else {
+        xhttp = new XMLHttpRequest();
+      }
+      xhttp.open("GET", filename, false);
+
+      try {
+        xhttp.responseType = "msxml-document"
+      }
+      catch (err) { }
+      xhttp.send("");
+      return xhttp.responseXML;
+    }
+
+    function getTypes() {
+
+      var xmlDoc = loadXMLDoc("schools.xml");
+      var types = xmlDoc.evaluate("//London-Schools/*", xmlDoc, null, XPathResult.ANY_TYPE, null);
+
+      var t = types.iterateNext();
+      var typesList = "";
+      typesList += "<option>" + "All Schools" + "</option>";
+
+      while (t) {
+        typesList += "<option>" + t.nodeName + "</option>";
+        t = types.iterateNext();
+      }
+
+      document.getElementById("typeInput").innerHTML = typesList;
+    }
+
+    function RenderXSLT() {
+      xml = loadXMLDoc("schools.xml");
+      xslt = loadXMLDoc("schoolNames.xslt");
+
+      var schoolName = document.getElementById("nameInput").value;
+      var type = document.getElementById("typeInput").value;
+
+      console.log(type);
+
+      if (window.ActiveXObject || xhttp.responseType == "msxml-document") {
+        var template = new ActiveXObject("Msxml2.XslTemplate.6.0");
+        template.stylesheet = xslt;
+
+        var proc = template.createProcessor();
+        proc.input = xml;
+        proc.addParameter("schoolTitle", schoolName);
+        proc.addParameter("schoolType", type);
+
+        proc.transform();
+        document.getElementById("xsltOutputContainer").innerHTML = proc.output;
+      }
+      else if (typeof XSLTProcessor !== 'undefined') {
+        var xsltProcessor = new XSLTProcessor();
+        xsltProcessor.importStylesheet(xslt);
+
+        xsltProcessor.setParameter(null, "schoolTitle", schoolName);
+        xsltProcessor.setParameter(null, "schoolType", type);
+
+        var resultDocument = xsltProcessor.transformToFragment(xml, document);
+        document.getElementById("xsltOutputContainer").innerHTML = "";
+        document.getElementById("xsltOutputContainer").appendChild(resultDocument);
+      }
+    }
+
+  </script>
+
+</body>
+
+</html>
